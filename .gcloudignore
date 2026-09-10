@@ -1,0 +1,11 @@
+.git
+.gitignore
+.vite/
+dist/
+node_modules/
+frontend/
+data/
+logs/
+group123-backend/
+final-merged-backend/
+group3-spec.md
