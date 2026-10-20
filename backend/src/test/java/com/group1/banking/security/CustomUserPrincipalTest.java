@@ -40,6 +40,8 @@ class CustomUserPrincipalTest {
     void newRolesReceiveOnlyTheirRoleAuthority() {
         assertThat(authorities(principalFor(RoleName.RISK_ANALYST)))
                 .containsExactly("ROLE_RISK_ANALYST");
+        assertThat(authorities(principalFor(RoleName.DEVELOPER)))
+                .containsExactly("ROLE_DEVELOPER");
         assertThat(authorities(principalFor(RoleName.COMPLIANCE_AUDIT_OBSERVER)))
                 .containsExactly("ROLE_COMPLIANCE_AUDIT_OBSERVER");
     }

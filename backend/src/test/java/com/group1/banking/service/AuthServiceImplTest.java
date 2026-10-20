@@ -3,6 +3,7 @@ package com.group1.banking.service;
 import com.group1.banking.dto.auth.AuthResponse;
 import com.group1.banking.dto.auth.LoginRequest;
 import com.group1.banking.dto.auth.RegisterRequest;
+import com.group1.banking.dto.auth.ProvisionAccountRequest;
 import com.group1.banking.dto.auth.UserResponse;
 import com.group1.banking.entity.Customer;
 import com.group1.banking.entity.User;
@@ -140,22 +141,67 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void register_shouldUseProvidedRoles_whenRolesSupplied() {
+    void register_shouldRejectPrivilegedRoles_whenRolesSupplied() {
         RegisterRequest req = new RegisterRequest();
         req.setUsername("admin@example.com");
         req.setPassword("Secure@123");
         req.setRoles(List.of(RoleName.BANK_ADMINISTRATOR));
 
+        assertThatThrownBy(() -> authService.register(req))
+                .isInstanceOf(ForbiddenException.class);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void developerMayProvisionOnlyDeveloperAccounts() {
+        ProvisionAccountRequest request = provisionRequest(RoleName.DEVELOPER);
         when(userRepository.existsByUsernameIgnoreCase(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("hashed");
-        when(userRepository.save(any(User.class))).thenAnswer(inv -> {
-            User u = inv.getArgument(0);
-            assertThat(u.getRoles()).containsExactly(RoleName.BANK_ADMINISTRATOR);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            assertThat(user.getRoles()).containsExactly(RoleName.DEVELOPER);
+            assertThat(user.getCustomerId()).isNull();
             return savedUser;
         });
         when(userMapper.toResponse(any())).thenReturn(userResponse);
 
-        authService.register(req);
+        authService.provisionAccount(request, RoleName.DEVELOPER);
+
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void developerCannotProvisionAdministratorAccount() {
+        ProvisionAccountRequest request = provisionRequest(RoleName.BANK_ADMINISTRATOR);
+
+        assertThatThrownBy(() -> authService.provisionAccount(request, RoleName.DEVELOPER))
+                .isInstanceOf(ForbiddenException.class);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void bankAdministratorMayProvisionAdministratorAccount() {
+        ProvisionAccountRequest request = provisionRequest(RoleName.BANK_ADMINISTRATOR);
+        when(userRepository.existsByUsernameIgnoreCase(anyString())).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            assertThat(user.getRoles()).containsExactly(RoleName.BANK_ADMINISTRATOR);
+            return savedUser;
+        });
+        when(userMapper.toResponse(any())).thenReturn(userResponse);
+
+        authService.provisionAccount(request, RoleName.BANK_ADMINISTRATOR);
+
+        verify(userRepository).save(any(User.class));
+    }
+
+    private ProvisionAccountRequest provisionRequest(RoleName role) {
+        ProvisionAccountRequest request = new ProvisionAccountRequest();
+        request.setUsername("provisioned@example.com");
+        request.setPassword("Secure@123");
+        request.setRole(role);
+        return request;
     }
 
     @Test

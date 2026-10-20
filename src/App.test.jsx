@@ -15,6 +15,7 @@ const authContext = {
     accessToken: 'token'
   },
   isAdmin: false,
+  isDeveloper: false,
   isComplianceObserver: false,
   isAuthenticated: true,
   logout: mockLogout
@@ -81,6 +82,7 @@ describe('Navbar and Sub-Navbar (AppLayout)', () => {
       accessToken: 'token'
     };
     authContext.isAdmin = false;
+    authContext.isDeveloper = false;
     authContext.isComplianceObserver = false;
     authContext.isAuthenticated = true;
     accountsQueryState.isLoading = false;
@@ -134,6 +136,23 @@ describe('Navbar and Sub-Navbar (AppLayout)', () => {
   });
 
   describe('authenticated user — sub-navbar items', () => {
+    it('shows a separate developer assistant link for developers', () => {
+      authContext.isDeveloper = true;
+      authContext.authState = {
+        ...authContext.authState,
+        customerId: null,
+        roles: ['DEVELOPER']
+      };
+
+      renderApp('/developer/chat');
+
+      expect(screen.getByRole('link', { name: 'Developer assistant' })).toHaveAttribute(
+        'href',
+        '/developer/chat'
+      );
+      expect(screen.queryByRole('button', { name: 'Overview' })).not.toBeInTheDocument();
+    });
+
     it('shows only the audit review link for a compliance observer', () => {
       authContext.isComplianceObserver = true;
       authContext.authState = {

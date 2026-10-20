@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.group1.banking.dto.auth.AuthResponse;
 import com.group1.banking.dto.auth.LoginRequest;
 import com.group1.banking.dto.auth.RegisterRequest;
+import com.group1.banking.dto.auth.ProvisionAccountRequest;
 import com.group1.banking.dto.auth.UserResponse;
 import com.group1.banking.entity.Account;
 import com.group1.banking.entity.User;
@@ -53,15 +54,17 @@ public class AuthServiceImpl implements AuthService {
             throw new ConflictException("USER_ALREADY_EXISTS", "A user with this email is already registered.", normalizedUsername);
         }
 
-        List<RoleName> requestedRoles =
-                (req.getRoles() == null || req.getRoles().isEmpty())
-                        ? List.of(RoleName.RETAIL_CUSTOMER)
-                        : req.getRoles();
+        List<RoleName> requestedRoles = req.getRoles();
+        if (requestedRoles != null && !requestedRoles.isEmpty()
+                && (requestedRoles.size() != 1 || requestedRoles.getFirst() != RoleName.RETAIL_CUSTOMER)) {
+            throw new ForbiddenException("ROLE_NOT_ALLOWED",
+                    "Public registration can create customer accounts only.");
+        }
 
         User user = new User();
         user.setUsername(normalizedUsername);
         user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
-        user.setRoles(requestedRoles);
+        user.setRoles(List.of(RoleName.RETAIL_CUSTOMER));
         user.setActive(true);
         user.setExternalSubjectId(null);
         user.setCustomerId(null);
@@ -70,6 +73,37 @@ public class AuthServiceImpl implements AuthService {
         logger.info("User registered successfully. userId={}, username={}, roles={}",
                 savedUser.getUserId(), savedUser.getUsername(), savedUser.getRoles());
 
+        return userMapper.toResponse(savedUser);
+    }
+
+    @Override
+    public UserResponse provisionAccount(ProvisionAccountRequest req, RoleName actorRole) {
+        RoleName targetRole = req.getRole();
+        boolean allowed = actorRole == RoleName.DEVELOPER && targetRole == RoleName.DEVELOPER
+                || actorRole == RoleName.BANK_ADMINISTRATOR
+                        && (targetRole == RoleName.DEVELOPER || targetRole == RoleName.BANK_ADMINISTRATOR);
+        if (!allowed) {
+            throw new ForbiddenException("ROLE_NOT_ALLOWED",
+                    "You are not authorized to provision the requested role.");
+        }
+
+        String normalizedUsername = req.getUsername().trim().toLowerCase();
+        if (userRepository.existsByUsernameIgnoreCase(normalizedUsername)) {
+            throw new ConflictException("USER_ALREADY_EXISTS",
+                    "A user with this email is already registered.", normalizedUsername);
+        }
+
+        User user = new User();
+        user.setUsername(normalizedUsername);
+        user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
+        user.setRoles(List.of(targetRole));
+        user.setActive(true);
+        user.setExternalSubjectId(null);
+        user.setCustomerId(null);
+
+        User savedUser = userRepository.save(user);
+        logger.info("Privileged account provisioned. userId={}, username={}, role={}",
+                savedUser.getUserId(), savedUser.getUsername(), targetRole);
         return userMapper.toResponse(savedUser);
     }
 

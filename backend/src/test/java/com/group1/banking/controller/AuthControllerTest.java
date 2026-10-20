@@ -3,6 +3,7 @@ package com.group1.banking.controller;
 import tools.jackson.databind.json.JsonMapper;
 import com.group1.banking.dto.auth.AuthResponse;
 import com.group1.banking.dto.auth.LoginRequest;
+import com.group1.banking.dto.auth.ProvisionAccountRequest;
 import com.group1.banking.dto.auth.RegisterRequest;
 import com.group1.banking.dto.auth.UserResponse;
 import com.group1.banking.enums.RoleName;
@@ -200,5 +201,44 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableContent());
+    }
+
+    @Test
+    @WithCustomUser
+    void provision_shouldRejectRetailCustomer() throws Exception {
+        ProvisionAccountRequest request = new ProvisionAccountRequest();
+        request.setUsername("developer@example.com");
+        request.setPassword("Secure@123");
+        request.setRole(RoleName.DEVELOPER);
+
+        mockMvc.perform(post("/api/auth/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(authService);
+    }
+
+    @Test
+    @WithCustomUser(role = RoleName.DEVELOPER)
+    void provision_shouldCreateDeveloperAccountForDeveloperActor() throws Exception {
+        ProvisionAccountRequest request = new ProvisionAccountRequest();
+        request.setUsername("new-developer@example.com");
+        request.setPassword("Secure@123");
+        request.setRole(RoleName.DEVELOPER);
+
+        UserResponse response = new UserResponse();
+        response.setUsername(request.getUsername());
+        response.setRoles(List.of(RoleName.DEVELOPER));
+        when(authService.provisionAccount(any(ProvisionAccountRequest.class), eq(RoleName.DEVELOPER)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.roles[0]").value("DEVELOPER"));
+
+        verify(authService).provisionAccount(any(ProvisionAccountRequest.class), eq(RoleName.DEVELOPER));
     }
 }

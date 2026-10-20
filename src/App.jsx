@@ -12,6 +12,7 @@ import { useAuth } from "./auth/AuthContext";
 import { AdminRoute } from "./auth/AdminRoute";
 import { AuditObserverRoute } from "./auth/AuditObserverRoute";
 import { RiskAnalystRoute } from "./auth/RiskAnalystRoute";
+import { DeveloperRoute } from "./auth/DeveloperRoute";
 import { ObserverRestrictedRoute } from "./auth/ObserverRestrictedRoute";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { ChatWidget } from "./components/ChatWidget";
@@ -47,6 +48,7 @@ import { AdminRiskScorePage } from "./pages/AdminRiskScorePage";
 import ComplianceAuditObserverPage from "./pages/ComplianceAuditObserverPage";
 import { RiskAnalystDashboardPage } from "./pages/RiskAnalystDashboardPage";
 import { AdminRiskReviewQueuePage } from "./pages/AdminRiskReviewQueuePage";
+import { DeveloperChatPage } from "./pages/DeveloperChatPage";
 
 function getDefaultAuthenticatedRoute(authState) {
   const isAdmin =
@@ -55,6 +57,13 @@ function getDefaultAuthenticatedRoute(authState) {
 
   if (isAdmin) {
     return "/admin/customers";
+  }
+
+  if (
+    authState.roles.includes("DEVELOPER") ||
+    authState.roles.includes("ROLE_DEVELOPER")
+  ) {
+    return "/developer/chat";
   }
 
   if (
@@ -138,7 +147,7 @@ function getActiveAccountIdFromPath(pathname) {
 }
 
 function AppLayout() {
-  const { authState, isAdmin, isComplianceObserver, isAuthenticated } = useAuth();
+  const { authState, isAdmin, isComplianceObserver, isAuthenticated, isDeveloper } = useAuth();
   const { isClassic, toggleTheme } = useTheme();
   const customerId = authState.customerId;
   const location = useLocation();
@@ -342,6 +351,15 @@ function AppLayout() {
               >
                 Risk Dashboard
               </NavLink>
+            ) : isDeveloper ? (
+              <NavLink
+                className={() =>
+                  `subnav-btn${pathname === "/developer/chat" ? " active" : ""}`
+                }
+                to="/developer/chat"
+              >
+                Developer assistant
+              </NavLink>
             ) : (
               <>
                 <button
@@ -507,6 +525,9 @@ export default function App() {
         />
 
         <Route element={<ProtectedRoute />}>
+          <Route element={<DeveloperRoute />}>
+            <Route path="/developer/chat" element={<DeveloperChatPage />} />
+          </Route>
           <Route element={<AdminRoute />}>
             <Route path="/admin/customers" element={<AdminCustomersPage />} />
             <Route path="/admin/risk-reviews" element={<AdminRiskReviewQueuePage />} />

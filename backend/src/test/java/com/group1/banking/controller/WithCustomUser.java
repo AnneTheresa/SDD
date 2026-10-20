@@ -27,6 +27,8 @@ public @interface WithCustomUser {
 
     long customerId() default 42L;
 
+    RoleName role() default RoleName.RETAIL_CUSTOMER;
+
     public static class Factory implements WithSecurityContextFactory<WithCustomUser> {
         @Override
         public SecurityContext createSecurityContext(WithCustomUser annotation) {
@@ -34,7 +36,7 @@ public @interface WithCustomUser {
             user.setUserId(UUID.randomUUID());
             user.setUsername("test@example.com");
             user.setPasswordHash("hash");
-            user.setRoles(List.of(RoleName.RETAIL_CUSTOMER));
+            user.setRoles(List.of(annotation.role()));
             user.setActive(true);
             user.setCustomerId(annotation.customerId());
 

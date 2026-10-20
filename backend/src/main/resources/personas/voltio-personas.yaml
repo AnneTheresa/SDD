@@ -419,3 +419,21 @@ persona-catalogue:
         riskLevel: null
         chatbotSufficientData: false
         canManageRestrictions: false
+
+    # ── Developer identity ──────────────────────────────────────────────────
+    - key: developer
+      login: seed.developer@voltio.test
+      displayName: Developer Test User
+      role: DEVELOPER
+      purpose: >
+        Non-production identity for verifying the developer chatbot and
+        developer-only API permissions. This account has no banking customer
+        record or financial data.
+      scenarios:
+        - developer-chat-access
+        - developer-account-provisioning
+      expectations:
+        riskStatus: INSUFFICIENT_DATA
+        riskLevel: null
+        chatbotSufficientData: false
+        canManageRestrictions: false

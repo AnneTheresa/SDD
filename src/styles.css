@@ -3280,6 +3280,78 @@ body.theme-classic .amount-input-group:focus-within {
   flex-shrink: 0;
 }
 
+.developer-chat-page {
+  width: min(100% - 2rem, 960px);
+  margin: 2rem auto;
+}
+
+.developer-chat-page .section-header {
+  align-items: flex-start;
+}
+
+.developer-chat-transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 18rem;
+  max-height: 55vh;
+  overflow-y: auto;
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card-bg);
+}
+
+.developer-chat-turn {
+  max-width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+
+.developer-chat-turn h2 {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+}
+
+.developer-chat-turn p {
+  white-space: pre-wrap;
+}
+
+.developer-chat-answer {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+
+.developer-chat-sources {
+  display: grid;
+  gap: 0.35rem;
+  padding-left: 1.25rem;
+  overflow-wrap: anywhere;
+}
+
+.developer-chat-sources a {
+  color: var(--neon-primary);
+}
+
+.developer-chat-form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.developer-chat-form textarea {
+  width: 100%;
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.developer-chat-form button {
+  justify-self: end;
+}
+
 @media (max-width: 560px) {
   .chat-widget {
     right: 1rem;
@@ -3288,5 +3360,14 @@ body.theme-classic .amount-input-group:focus-within {
 
   .chat-panel {
     width: calc(100vw - 2rem);
+  }
+
+  .developer-chat-page {
+    width: min(100% - 1rem, 960px);
+    margin: 1rem auto;
+  }
+
+  .developer-chat-page .section-header {
+    flex-direction: column;
   }
 }

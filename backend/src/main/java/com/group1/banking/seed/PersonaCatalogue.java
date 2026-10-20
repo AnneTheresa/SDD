@@ -175,7 +175,12 @@ public class PersonaCatalogue {
                         + "' must start with '" + LOGIN_PREFIX + "' and end with '" + LOGIN_DOMAIN + "'.");
             }
 
-            if (p.getAccounts().isEmpty()) {
+            if (p.getRole() == RoleName.DEVELOPER) {
+                if (!p.getAccounts().isEmpty() || !p.getGoals().isEmpty() || !p.getTransactions().isEmpty()) {
+                    throw new IllegalStateException(id
+                            + " is a developer identity and must not contain banking data.");
+                }
+            } else if (p.getAccounts().isEmpty()) {
                 throw new IllegalStateException(id + " has no accounts - every persona needs at least one.");
             }
 

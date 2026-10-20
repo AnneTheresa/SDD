@@ -1,10 +1,14 @@
 package com.group1.banking.integration;
 
 import com.group1.banking.DigitalBankingPlatformApplication;
+import com.group1.banking.entity.User;
+import com.group1.banking.enums.RoleName;
+import com.group1.banking.repository.UserRepository;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashMap;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -40,28 +45,19 @@ class AuthCustomerIntegrationTest {
     @Autowired
     private JsonMapper objectMapper;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Test
     void registerLoginCreateCustomerAndGetCustomer_asAdmin_success() throws Exception {
 
-        // 1. Register admin user
-        HashMap<String, Object> registerBody = new HashMap<>();
-        registerBody.put("username", "admin@fdmgroup.com");
-        registerBody.put("password", "Secure@123");
-        registerBody.put("roles", new String[]{"BANK_ADMINISTRATOR"});
+        // Bootstrap the first administrator through the trusted test/deployment path.
+        bootstrapUser("admin@fdmgroup.com", RoleName.BANK_ADMINISTRATOR);
 
-        String registerResponse = mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registerBody)))
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        JsonNode registerJson = objectMapper.readTree(registerResponse);
-        assertThat(registerJson.get("username").asText()).isEqualTo("admin@fdmgroup.com");
-        assertThat(registerJson.get("roles").get(0).asText()).isEqualTo("BANK_ADMINISTRATOR");
-
-        // 2. Login
+        // Login
         HashMap<String, Object> loginBody = new HashMap<>();
         loginBody.put("username", "admin@fdmgroup.com");
         loginBody.put("password", "Secure@123");
@@ -104,6 +100,50 @@ class AuthCustomerIntegrationTest {
         mockMvc.perform(get("/api/customers/{customerId}", customerId)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void publicRegistrationCannotGrantDeveloperOrAdministratorRoles() throws Exception {
+        for (String role : List.of("DEVELOPER", "BANK_ADMINISTRATOR")) {
+            HashMap<String, Object> registerBody = new HashMap<>();
+            registerBody.put("username", role.toLowerCase() + "@example.com");
+            registerBody.put("password", "Secure@123");
+            registerBody.put("roles", new String[]{role});
+
+            mockMvc.perform(post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(registerBody)))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    void developerCanProvisionOnlyDeveloperAccounts() throws Exception {
+        bootstrapUser("developer@fdmgroup.com", RoleName.DEVELOPER);
+        String accessToken = login("developer@fdmgroup.com");
+
+        HashMap<String, Object> request = new HashMap<>();
+        request.put("username", "new-developer@example.com");
+        request.put("password", "Secure@123");
+        request.put("role", "DEVELOPER");
+
+        String response = mockMvc.perform(post("/api/auth/provision")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        assertThat(objectMapper.readTree(response).get("roles").get(0).asText()).isEqualTo("DEVELOPER");
+
+        request.put("username", "new-admin@example.com");
+        request.put("role", "BANK_ADMINISTRATOR");
+        mockMvc.perform(post("/api/auth/provision")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -159,16 +199,7 @@ class AuthCustomerIntegrationTest {
 
     @Test
     void updateCustomerWithAdminToken_success() throws Exception {
-        // register admin
-        HashMap<String, Object> registerBody = new HashMap<>();
-        registerBody.put("username", "admin2@fdmgroup.com");
-        registerBody.put("password", "Secure@123");
-        registerBody.put("roles", new String[]{"BANK_ADMINISTRATOR"});
-
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registerBody)))
-                .andExpect(status().isCreated());
+        bootstrapUser("admin2@fdmgroup.com", RoleName.BANK_ADMINISTRATOR);
 
         // login
         HashMap<String, Object> loginBody = new HashMap<>();
@@ -217,16 +248,7 @@ class AuthCustomerIntegrationTest {
 
     @Test
     void patchCustomerWithBlockedField_returnsBadRequest() throws Exception {
-        // register admin
-        HashMap<String, Object> registerBody = new HashMap<>();
-        registerBody.put("username", "admin3@fdmgroup.com");
-        registerBody.put("password", "Secure@123");
-        registerBody.put("roles", new String[]{"BANK_ADMINISTRATOR"});
-
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registerBody)))
-                .andExpect(status().isCreated());
+        bootstrapUser("admin3@fdmgroup.com", RoleName.BANK_ADMINISTRATOR);
 
         // login
         HashMap<String, Object> loginBody = new HashMap<>();
@@ -270,5 +292,28 @@ class AuthCustomerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(patchBody)))
                 .andExpect(status().isBadRequest());
+    }
+
+    private void bootstrapUser(String username, RoleName role) {
+        User user = new User();
+        user.setUsername(username);
+        user.setPasswordHash(passwordEncoder.encode("Secure@123"));
+        user.setRoles(List.of(role));
+        user.setActive(true);
+        userRepository.save(user);
+    }
+
+    private String login(String username) throws Exception {
+        HashMap<String, Object> loginBody = new HashMap<>();
+        loginBody.put("username", username);
+        loginBody.put("password", "Secure@123");
+        String response = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginBody)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return objectMapper.readTree(response).get("accessToken").asText();
     }
 }

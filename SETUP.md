@@ -57,7 +57,31 @@ mvn spring-boot:run
 
 Runs on port **8081**. Leave it running in its own terminal.
 
-## 4. Start the backend
+## 4. Start the developer repository MCP server
+
+The developer assistant uses the existing `mcpdevserver/` Spring application.
+Configure the repository owner/name/branch and a fine-grained GitHub token in
+the root `.env` file. The token should have read-only Contents access to this
+repository; do not commit it. GitHub code search requires authentication.
+
+`DOCUMENTATION_ROOT` defaults to `../specs` (the repository's existing
+documentation/specification section) when the server is launched from
+`mcpdevserver/`. Point it at the contributor Markdown directory if that directory
+is elsewhere. The server searches and reads Markdown files only;
+if the configured directory is missing, it reports the documentation source as
+unavailable instead of silently substituting another source.
+
+```bash
+cd mcpdevserver
+mvnw.cmd spring-boot:run
+```
+
+Runs on `127.0.0.1:8082` and exposes read-only documentation and GitHub
+repository tools. The MCP server has no user-level authentication, so keep it
+on loopback for local development and restrict it to a private network if
+deploying it separately. Leave it running in its own terminal.
+
+## 5. Start the backend
 
 ```
 cd backend
@@ -69,7 +93,19 @@ mvn spring-boot:run
 Runs on port **8080**. First startup will take a bit longer while it sets up
 the local H2 database and downloads dependencies.
 
-## 5. Start the frontend
+The backend connects to the developer MCP server at
+`MCP_DEV_SERVER_URL` (default `http://localhost:8082`). The developer assistant
+is available only to users with the `DEVELOPER` role; customer registration
+cannot grant this role. For local development, enable the non-production
+personas with `SEED_PERSONAS_ENABLED=true` and sign in as
+`seed.developer@voltio.test` using the shared seed password described below.
+For other environments, provision developer accounts through the protected
+`POST /api/auth/provision` endpoint: a developer may provision another
+developer, while a bank administrator may provision a developer or
+administrator. Initial administrator creation is a trusted deployment
+operation, not public registration.
+
+## 6. Start the frontend
 
 From the repo root (a separate terminal):
 
@@ -106,11 +142,12 @@ environments should do it.
 | `sparse` | `seed.sparse@voltio.test` | Deliberately data-poor. Triggers the chatbot fallback and the risk `INSUFFICIENT_DATA` status. |
 | `riskAnalyst` | `seed.riskanalyst@voltio.test` | Risk Analyst role. Also proves a non-administrator staff role does **not** inherit freeze/unfreeze powers. |
 | `complianceObserver` | `seed.compliance@voltio.test` | Compliance/Audit Observer role, read-only oversight. |
+| `developer` | `seed.developer@voltio.test` | Developer role for the repository-backed development assistant; has no banking customer or account data. |
 
 Every role the platform recognizes has a persona holding it, and a catalogue invariant (C11)
 makes that a startup failure if a role is ever added without one.
 
-All four share the password on `PersonaSeeder.SEED_PASSWORD`. These credentials work only
+All seeded personas share the password on `PersonaSeeder.SEED_PASSWORD`. These credentials work only
 in non-production environments - seeding refuses to run against a production-shaped
 configuration, and is disabled by default everywhere else.
 

@@ -128,6 +128,12 @@ public class PersonaSeeder {
             return false;
         }
 
+        if (persona.getRole() == com.group1.banking.enums.RoleName.DEVELOPER) {
+            createUser(persona, null);
+            log.info("Seeded developer persona '{}' as {}.", persona.getKey(), persona.getLogin());
+            return true;
+        }
+
         Customer customer = createCustomer(persona);
         Map<String, Account> accountsByRef = createAccounts(persona, customer);
         createTransactions(persona, accountsByRef, anchor);
@@ -226,7 +232,7 @@ public class PersonaSeeder {
         User user = new User();
         user.setUsername(persona.getLogin());
         user.setPasswordHash(passwordEncoder.encode(SEED_PASSWORD));
-        user.setCustomerId(customer.getCustomerId());
+        user.setCustomerId(customer == null ? null : customer.getCustomerId());
         user.setRoles(new ArrayList<>(List.of(persona.getRole())));
         user.setActive(true);
         userRepository.save(user);

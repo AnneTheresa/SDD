@@ -3,13 +3,17 @@ package com.group1.banking.config;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.definition.ToolDefinition;
 
 import com.group1.banking.service.impl.SavingsChatTools;
+import com.group1.banking.service.impl.DeveloperChatEvidenceTracker;
+import com.group1.banking.service.impl.DeveloperEvidenceTrackingCallback;
 import com.group1.banking.service.impl.ToolSelectionTracker;
 import com.group1.banking.service.impl.ToolTrackingCallback;
 import com.group1.banking.service.impl.TransferChatTool;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,5 +57,35 @@ class ChatbotAiConfigTest {
 
         assertThat(tracked.getToolCallbacks()).hasSize(1);
         assertThat(tracked.getToolCallbacks()[0]).isInstanceOf(ToolTrackingCallback.class);
+    }
+
+    @Test
+    void developerAndCustomerCallbacks_areIsolatedAndDeveloperEvidenceIsTracked() {
+        ToolCallback customerCallback = callback("savings_account_summaries");
+        ToolCallback developerCallback = callback("developer_search_repository");
+        when(developerCallback.call(anyString())).thenReturn(
+                "SOURCE: type=github; path=src/App.jsx; url=https://github.com/example/repo/blob/main/src/App.jsx; "
+                        + "revision=branch:main");
+        ToolCallbackProvider provider = () -> new ToolCallback[] { customerCallback, developerCallback };
+        DeveloperChatEvidenceTracker evidenceTracker = new DeveloperChatEvidenceTracker();
+        evidenceTracker.beginTurn();
+
+        ToolCallback[] customerTools = ChatbotAiConfig.excludingDeveloperTools(provider).getToolCallbacks();
+        ToolCallback[] developerTools = ChatbotAiConfig.onlyDeveloperTools(provider, evidenceTracker)
+                .getToolCallbacks();
+        assertThat(customerTools).containsExactly(customerCallback);
+        assertThat(developerTools).singleElement().isInstanceOf(DeveloperEvidenceTrackingCallback.class);
+        assertThat(developerTools[0].call("{}")).contains("SOURCE: type=github");
+        assertThat(evidenceTracker.snapshot().sources()).singleElement()
+                .extracting(source -> source.path()).isEqualTo("src/App.jsx");
+        evidenceTracker.clear();
+    }
+
+    private ToolCallback callback(String name) {
+        ToolCallback callback = mock(ToolCallback.class);
+        ToolDefinition definition = mock(ToolDefinition.class);
+        when(definition.name()).thenReturn(name);
+        when(callback.getToolDefinition()).thenReturn(definition);
+        return callback;
     }
 }

@@ -2,6 +2,7 @@ package com.group1.banking.enums;
 
 public enum RoleName {
     BANK_ADMINISTRATOR("Bank Administrator"),
+    DEVELOPER("Developer"),
     RISK_ANALYST("Risk Analyst"),
     COMPLIANCE_AUDIT_OBSERVER("Compliance/Audit Observer"),
     RETAIL_CUSTOMER("Retail Customer");

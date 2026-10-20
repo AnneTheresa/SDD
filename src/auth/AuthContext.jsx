@@ -34,6 +34,8 @@ export function AuthProvider({ children }) {
       || authState.roles.includes('ROLE_COMPLIANCE_AUDIT_OBSERVER'),
     isRiskAnalyst: authState.roles.includes('RISK_ANALYST')
       || authState.roles.includes('ROLE_RISK_ANALYST'),
+    isDeveloper: authState.roles.includes('DEVELOPER')
+      || authState.roles.includes('ROLE_DEVELOPER'),
     completeLogin(authResponse, username) {
       const nextState = buildAuthenticatedState(authResponse, username);
       // Write to localStorage synchronously so the token is immediately
