@@ -30,7 +30,7 @@ describe('DeveloperChatPage', () => {
         sources: [{
           sourceType: 'github',
           path: 'src/App.jsx',
-          url: 'https://github.com/sofiarahul/banking-platform/blob/main/src/App.jsx',
+          url: 'https://github.com/bit-yottabyte/banking-platform/blob/main/src/App.jsx',
           revision: 'branch:main',
         }],
       })

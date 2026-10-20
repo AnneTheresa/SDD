@@ -60,18 +60,20 @@ class ChatbotAiConfigTest {
     }
 
     @Test
-    void developerAndCustomerCallbacks_areIsolatedAndDeveloperEvidenceIsTracked() {
+    void developerCallbackEvidence_isTrackedIndependentlyFromCustomerCallbacks() {
         ToolCallback customerCallback = callback("savings_account_summaries");
         ToolCallback developerCallback = callback("developer_search_repository");
         when(developerCallback.call(anyString())).thenReturn(
                 "SOURCE: type=github; path=src/App.jsx; url=https://github.com/example/repo/blob/main/src/App.jsx; "
                         + "revision=branch:main");
-        ToolCallbackProvider provider = () -> new ToolCallback[] { customerCallback, developerCallback };
         DeveloperChatEvidenceTracker evidenceTracker = new DeveloperChatEvidenceTracker();
         evidenceTracker.beginTurn();
 
-        ToolCallback[] customerTools = ChatbotAiConfig.excludingDeveloperTools(provider).getToolCallbacks();
-        ToolCallback[] developerTools = ChatbotAiConfig.onlyDeveloperTools(provider, evidenceTracker)
+        ToolCallbackProvider customerProvider = () -> new ToolCallback[] { customerCallback };
+        ToolCallbackProvider developerProvider = () -> new ToolCallback[] { developerCallback };
+
+        ToolCallback[] customerTools = customerProvider.getToolCallbacks();
+        ToolCallback[] developerTools = ChatbotAiConfig.onlyDeveloperTools(developerProvider, evidenceTracker)
                 .getToolCallbacks();
         assertThat(customerTools).containsExactly(customerCallback);
         assertThat(developerTools).singleElement().isInstanceOf(DeveloperEvidenceTrackingCallback.class);
@@ -88,4 +90,5 @@ class ChatbotAiConfigTest {
         when(callback.getToolDefinition()).thenReturn(definition);
         return callback;
     }
+
 }

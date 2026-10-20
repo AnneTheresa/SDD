@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.group1.banking.dto.chat.DeveloperChatRequest;
 import com.group1.banking.dto.chat.DeveloperChatResponse;
@@ -16,6 +17,10 @@ import com.group1.banking.dto.chat.DeveloperChatSource;
 import com.group1.banking.service.impl.DeveloperChatEvidenceTracker.TurnEvidence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
@@ -32,16 +37,25 @@ public class DeveloperChatService {
     private static final String SOURCE_UNAVAILABLE_ANSWER =
             "I couldn't reach the configured documentation or repository sources, so I can't verify "
                     + "a repository-specific answer right now. Please retry later.";
+    private static final String DOCUMENTATION_FALLBACK_PREFIX =
+            "I couldn't verify this against the live repository. The contributor documentation provides "
+                    + "the following relevant information:";
+    private static final String DOCUMENTATION_TOOL_NAME = "developer_search_documentation";
+    private static final JsonHelper JSON = new JsonHelper();
 
     private final ChatClient chatClient;
     private final DeveloperChatEvidenceTracker evidenceTracker;
+    private final ToolCallbackProvider developerMcpToolCallbackProvider;
     private final Map<SessionKey, Conversation> conversations = new ConcurrentHashMap<>();
 
     public DeveloperChatService(
             ChatClient developerChatClient,
-            DeveloperChatEvidenceTracker evidenceTracker) {
+            DeveloperChatEvidenceTracker evidenceTracker,
+            @Qualifier("developerMcpToolCallbackProvider")
+            ToolCallbackProvider developerMcpToolCallbackProvider) {
         this.chatClient = developerChatClient;
         this.evidenceTracker = evidenceTracker;
+        this.developerMcpToolCallbackProvider = developerMcpToolCallbackProvider;
     }
 
     public DeveloperChatResponse ask(UUID userId, DeveloperChatRequest request) {
@@ -57,6 +71,7 @@ public class DeveloperChatService {
             evidenceTracker.beginTurn();
             String answer;
             TurnEvidence evidence;
+            boolean chatFailed = false;
             try {
                 String prompt = promptWithContext(conversation.turns, request.getMessage());
                 answer = chatClient.prompt().user(prompt).call().content();
@@ -64,14 +79,35 @@ public class DeveloperChatService {
             } catch (RuntimeException ex) {
                 log.warn("Developer chat failed for userId={} sessionId={} ({})",
                         userId, sessionId, ex.getClass().getSimpleName());
-                return new DeveloperChatResponse(
-                        sessionId.toString(), SOURCE_UNAVAILABLE_ANSWER, List.of(), "UNAVAILABLE");
+                answer = null;
+                evidence = evidenceTracker.snapshot();
+                chatFailed = true;
             } finally {
                 evidenceTracker.clear();
             }
 
+            if (chatFailed || needsDocumentationFallback(evidence)) {
+                evidenceTracker.beginTurn();
+                try {
+                    String fallbackAnswer = searchDocumentationFallback(request.getMessage());
+                    TurnEvidence fallbackEvidence = evidenceTracker.snapshot();
+                    if (fallbackAnswer != null) {
+                        answer = fallbackAnswer;
+                        evidence = evidence.with(fallbackEvidence);
+                    }
+                } catch (RuntimeException ex) {
+                    log.warn("Developer documentation fallback failed for userId={} sessionId={} ({})",
+                            userId, sessionId, ex.getClass().getSimpleName());
+                } finally {
+                    evidenceTracker.clear();
+                }
+            }
+
             String status = sourceStatus(evidence);
             List<DeveloperChatSource> sources = evidence.sources();
+            if (chatFailed && sources.isEmpty() && status.equals("NO_EVIDENCE")) {
+                status = "UNAVAILABLE";
+            }
             if (sources.isEmpty()) {
                 answer = status.equals("UNAVAILABLE") ? SOURCE_UNAVAILABLE_ANSWER : NO_EVIDENCE_ANSWER;
             } else if (answer == null || answer.isBlank()) {
@@ -90,6 +126,38 @@ public class DeveloperChatService {
             }
             return new DeveloperChatResponse(sessionId.toString(), answer, sources, status);
         }
+    }
+
+    private boolean needsDocumentationFallback(TurnEvidence evidence) {
+        boolean hasDocumentation = evidence.sources().stream()
+                .anyMatch(source -> source.sourceType().equalsIgnoreCase("documentation"));
+        boolean githubUnavailable = "unavailable".equals(evidence.statuses().get("github"));
+        return !hasDocumentation && (githubUnavailable || evidence.sources().isEmpty());
+    }
+
+    private String searchDocumentationFallback(String query) {
+        ToolCallback searchTool = java.util.Arrays.stream(developerMcpToolCallbackProvider.getToolCallbacks())
+                .filter(callback -> DOCUMENTATION_TOOL_NAME.equals(callback.getToolDefinition().name()))
+                .findFirst()
+                .orElse(null);
+        if (searchTool == null) {
+            return null;
+        }
+
+        String output = searchTool.call(JSON.toJson(Map.of("query", query)));
+        evidenceTracker.record(output);
+        TurnEvidence evidence = evidenceTracker.snapshot();
+        if (evidence.sources().stream()
+                .noneMatch(source -> source.sourceType().equalsIgnoreCase("documentation"))) {
+            return null;
+        }
+
+        String excerpts = String.join("\n", McpToolResultText.extractTexts(output)).lines()
+                .filter(line -> !line.startsWith("SOURCE:") && !line.startsWith("SOURCE_STATUS:")
+                        && !line.equals("CONTENT:"))
+                .collect(Collectors.joining("\n"))
+                .trim();
+        return excerpts.isBlank() ? null : DOCUMENTATION_FALLBACK_PREFIX + "\n\n" + excerpts;
     }
 
     private String promptWithContext(Deque<Turn> turns, String message) {

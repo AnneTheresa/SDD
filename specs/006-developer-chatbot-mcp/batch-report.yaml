@@ -1,0 +1,198 @@
+batch_id: "B02"
+completed_tasks: ["T001", "T002", "T003", "T004", "T005", "T007", "T008", "T011"]
+blocked_tasks: []
+files_changed:
+  T001:
+    - file: "mcpdevserver/src/main/resources/application.properties"
+      change_type: "modified"
+      description: "Defaulted DOCUMENTATION_ROOT to ../Documentation."
+    - file: "mcpdevserver/src/main/java/com/voltio/mcpdevserver/config/McpDevServerProperties.java"
+      change_type: "modified"
+      description: "Kept the property class default aligned with application config."
+  T002:
+    - file: "mcpdevserver/src/test/java/com/voltio/mcpdevserver/tools/DocumentationToolsTest.java"
+      change_type: "modified"
+      description: "Added nested Documentation search/citation coverage."
+    - file: "mcpdevserver/src/test/java/com/voltio/mcpdevserver/McpdevserverApplicationTests.java"
+      change_type: "modified"
+      description: "Verified configured default and actual repository guide discovery."
+  T003:
+    - file: "SETUP.md"
+      change_type: "modified"
+      description: "Corrected database architecture, startup order, platform commands, module working directories, and troubleshooting."
+    - file: ".env.example"
+      change_type: "modified"
+      description: "Aligned example repository and Documentation configuration; persona seed disabled by default."
+    - file: "Documentation/README.md"
+      change_type: "modified"
+      description: "Clarified which Markdown corpus the MCP server searches."
+  T004:
+    - file: "backend/src/main/java/com/group1/banking/config/ChatbotAiConfig.java"
+      change_type: "modified"
+      description: "Explained documentation-first guidance and code-specific GitHub evidence."
+  T005:
+    - file: "backend/src/main/java/com/group1/banking/config/ChatbotAiConfig.java"
+      change_type: "modified"
+      description: "Injects MCP clients as a collection and scopes the developer provider to developer-server."
+    - file: "backend/src/main/java/com/group1/banking/config/McpClientDiagnostics.java"
+      change_type: "modified"
+      description: "Uses the qualified developer provider and reports callback-discovery failures clearly."
+    - file: "backend/src/test/java/com/group1/banking/config/ChatbotAiConfigTest.java"
+      change_type: "modified"
+      description: "Verified developer/customer callback separation and developer evidence tracking."
+    - file: "backend/src/test/java/com/group1/banking/config/McpClientIsolationTest.java"
+      change_type: "added"
+      description: "Verifies Spring client-collection injection and that rates-server failures do not affect developer discovery."
+  T008:
+    - file: "backend/src/main/java/com/group1/banking/service/impl/McpToolResultText.java"
+      change_type: "added"
+      description: "Decodes JSON-wrapped MCP callback content before citations and excerpts are processed."
+    - file: "backend/src/main/java/com/group1/banking/service/impl/DeveloperChatEvidenceTracker.java"
+      change_type: "modified"
+      description: "Tracks source citations and statuses from Spring AI's serialized MCP tool output."
+    - file: "backend/src/main/java/com/group1/banking/service/impl/DeveloperChatService.java"
+      change_type: "modified"
+      description: "Falls back to a documentation search and returns its cited excerpt when chat fails or GitHub is unavailable."
+    - file: "backend/src/test/java/com/group1/banking/service/impl/DeveloperChatServiceTest.java"
+      change_type: "modified"
+      description: "Covers documentation fallback for failed chat calls, GitHub outages, and prior-turn evidence boundaries."
+    - file: "backend/src/test/java/com/group1/banking/service/impl/DeveloperChatEvidenceTrackerTest.java"
+      change_type: "added"
+      description: "Covers decoding wrapped MCP citations and source statuses."
+    - file: "SETUP.md"
+      change_type: "modified"
+      description: "Documents the direct documentation fallback and its limits."
+  T011:
+    - file: "backend/src/test/java/com/group1/banking/config/McpClientIsolationTest.java"
+      change_type: "modified"
+      description: "Verifies failures stay scoped to the selected MCP connection."
+  T007:
+    - file: "mcpdevserver/src/test/java/com/voltio/mcpdevserver/tools/GitHubRepositoryToolsTest.java"
+      change_type: "modified"
+      description: "Updated scoped repository URL and owner fixtures."
+    - file: "src/pages/DeveloperChatPage.test.jsx"
+      change_type: "modified"
+      description: "Updated clickable source citation fixture."
+upstream_artifacts_consumed:
+  T001:
+    - artifact: "specs/006-developer-chatbot-mcp/plan.md"
+      used_for: "Required Documentation default and environment override."
+    - artifact: "specs/006-developer-chatbot-mcp/research.md"
+      used_for: "Confirmed process working directory determines relative root."
+  T003:
+    - artifact: "specs/006-developer-chatbot-mcp/quickstart.md"
+      used_for: "Focused module test commands and local source scenarios."
+evidence_mapping:
+  T001:
+    - upstream: "specs/006-developer-chatbot-mcp/plan.md#Step-1.1"
+      output: "mcpdevserver/src/main/resources/application.properties"
+      evidence: "McpdevserverApplicationTests verifies ../Documentation."
+  T002:
+    - upstream: "specs/006-developer-chatbot-mcp/plan.md#Step-1.2"
+      output: "mcpdevserver/src/test/java/com/voltio/mcpdevserver/tools/DocumentationToolsTest.java"
+      evidence: "Nested Markdown search emits the relative Documentation path."
+  T004:
+    - upstream: "specs/006-developer-chatbot-mcp/plan.md#Step-2.1"
+      output: "backend/src/main/java/com/group1/banking/config/ChatbotAiConfig.java"
+      evidence: "ChatbotAiConfigTest passes with developer/customer tools isolated."
+  T005:
+    - upstream: "specs/006-developer-chatbot-mcp/plan.md#Step-2.1"
+      output: "backend/src/test/java/com/group1/banking/config/McpClientIsolationTest.java"
+      evidence: "Spring-context collection-injection regression passes; runtime backend startup reports four developer MCP callbacks while the unrelated rates server is unavailable."
+  T008:
+    - upstream: "specs/006-developer-chatbot-mcp/plan.md#Step-2.3"
+      output: "backend/src/main/java/com/group1/banking/service/impl/DeveloperChatService.java"
+      evidence: "Focused service tests return a cited Documentation excerpt during model failure or GitHub outage."
+    - upstream: "specs/006-developer-chatbot-mcp/plan.md#REQ-006"
+      output: "backend/src/main/java/com/group1/banking/service/impl/DeveloperChatEvidenceTracker.java"
+      evidence: "Serialized MCP text is decoded and source statuses/citations are retained."
+traceability:
+  - requirement: "REQ-002"
+    plan_item: "1.1"
+    task: "T001"
+    files: ["mcpdevserver/src/main/resources/application.properties", "mcpdevserver/src/main/java/com/voltio/mcpdevserver/config/McpDevServerProperties.java"]
+    status: "completed"
+  - requirement: "REQ-002"
+    plan_item: "1.2"
+    task: "T002"
+    files: ["mcpdevserver/src/test/java/com/voltio/mcpdevserver/tools/DocumentationToolsTest.java"]
+    status: "completed"
+  - requirement: "REQ-004"
+    plan_item: "1.1"
+    task: "T003"
+    files: ["SETUP.md", ".env.example", "Documentation/README.md"]
+    status: "completed"
+  - requirement: "REQ-005"
+    plan_item: "2.1"
+    task: "T004"
+    files: ["backend/src/main/java/com/group1/banking/config/ChatbotAiConfig.java"]
+    status: "completed"
+  - requirement: "REQ-005"
+    plan_item: "2.1"
+    task: "T005"
+    files: ["backend/src/test/java/com/group1/banking/config/ChatbotAiConfigTest.java", "backend/src/test/java/com/group1/banking/config/McpClientIsolationTest.java"]
+    status: "completed"
+  - requirement: "REQ-006"
+    plan_item: "2.3"
+    task: "T008"
+    files: ["backend/src/main/java/com/group1/banking/service/impl/DeveloperChatService.java", "backend/src/main/java/com/group1/banking/service/impl/DeveloperChatEvidenceTracker.java", "backend/src/main/java/com/group1/banking/service/impl/McpToolResultText.java"]
+    status: "completed"
+  - requirement: "REQ-010"
+    plan_item: "4.1"
+    task: "T011"
+    files: ["backend/src/test/java/com/group1/banking/config/McpClientIsolationTest.java", "backend/src/test/java/com/group1/banking/service/impl/DeveloperChatServiceTest.java"]
+    status: "completed"
+  - requirement: "REQ-003"
+    plan_item: "2.2"
+    task: "T007"
+    files: ["mcpdevserver/src/test/java/com/voltio/mcpdevserver/tools/GitHubRepositoryToolsTest.java", "src/pages/DeveloperChatPage.test.jsx"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: MEDIUM
+    message: "The full backend suite, 30-question answer-quality evaluation, and complete feature task list remain pending."
+test_results:
+  T001:
+    command: "Set-Location .\\mcpdevserver; .\\mvnw.cmd test"
+    passed: 3
+    failed: 0
+    skipped: 0
+    failures: []
+  T002:
+    command: "Set-Location .\\mcpdevserver; .\\mvnw.cmd test"
+    passed: 6
+    failed: 0
+    skipped: 0
+    failures: []
+  T004:
+    command: "Set-Location .\\backend; .\\mvnw.cmd -Dtest=ChatbotAiConfigTest test"
+    passed: 4
+    failed: 0
+    skipped: 0
+    failures: []
+  T005:
+    command: "Set-Location .\\backend; .\\mvnw.cmd '-Dtest=McpClientDiagnosticsTest,DeveloperChatServiceTest,DeveloperChatEvidenceTrackerTest,ChatbotAiConfigTest,McpClientIsolationTest' test"
+    passed: 16
+    failed: 0
+    skipped: 0
+    failures: []
+  T008/T011:
+    command: "Set-Location .\\backend; .\\mvnw.cmd '-Dtest=DeveloperChatServiceTest,DeveloperChatEvidenceTrackerTest,ChatbotAiConfigTest,McpClientIsolationTest' test"
+    passed: 13
+    failed: 0
+    skipped: 0
+    failures: []
+  backend_runtime:
+    command: "Set-Location .\\backend; .\\mvnw.cmd spring-boot:run; Invoke-RestMethod http://localhost:8080/actuator/health"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "ApplicationReadyEvent logged four developer MCP callbacks; health endpoint returned HTTP 200 with status UP and the backend remained listening on port 8080."
+  T007:
+    command: "Set-Location .\\mcpdevserver; .\\mvnw.cmd test; npm test -- src/pages/DeveloperChatPage.test.jsx"
+    passed: 7
+    failed: 0
+    skipped: 0
+    failures: []

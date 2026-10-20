@@ -7,12 +7,17 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.group1.banking.dto.chat.DeveloperChatRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JsonHelper;
 
 class DeveloperChatServiceTest {
 
@@ -22,6 +27,7 @@ class DeveloperChatServiceTest {
     private ChatClient.ChatClientRequestSpec requestSpec;
     private ChatClient.CallResponseSpec responseSpec;
     private DeveloperChatEvidenceTracker evidenceTracker;
+    private ToolCallbackProvider developerMcpToolCallbackProvider;
     private DeveloperChatService service;
 
     @BeforeEach
@@ -33,7 +39,8 @@ class DeveloperChatServiceTest {
         when(requestSpec.user(anyString())).thenReturn(requestSpec);
         when(requestSpec.call()).thenReturn(responseSpec);
         evidenceTracker = new DeveloperChatEvidenceTracker();
-        service = new DeveloperChatService(chatClient, evidenceTracker);
+        developerMcpToolCallbackProvider = () -> new ToolCallback[0];
+        service = new DeveloperChatService(chatClient, evidenceTracker, developerMcpToolCallbackProvider);
     }
 
     @Test
@@ -81,6 +88,29 @@ class DeveloperChatServiceTest {
     }
 
     @Test
+    void doesNotReusePriorTurnCitationsAsCurrentEvidence() {
+        when(responseSpec.content()).thenAnswer(new org.mockito.stubbing.Answer<String>() {
+            private int calls;
+
+            @Override
+            public String answer(org.mockito.invocation.InvocationOnMock invocation) {
+                if (calls++ == 0) {
+                    evidenceTracker.record("SOURCE: type=documentation; path=SETUP.md; url=; revision=working-tree");
+                    return "The setup guide describes the local workflow.";
+                }
+                return "An unsupported follow-up claim.";
+            }
+        });
+        var first = service.ask(USER_ID, request("How do I start locally?", null));
+
+        var second = service.ask(USER_ID, request("What exact port is it on?", first.sessionId()));
+
+        assertThat(second.answer()).contains("couldn't substantiate");
+        assertThat(second.sources()).isEmpty();
+        assertThat(second.sourceStatus()).isEqualTo("NO_EVIDENCE");
+    }
+
+    @Test
     void doesNotReturnUnsupportedModelTextWithoutAnyCitation() {
         when(responseSpec.content()).thenReturn("An unsupported repository-specific claim.");
 
@@ -101,6 +131,56 @@ class DeveloperChatServiceTest {
         assertThat(response.answer()).doesNotContain("remote details");
         assertThat(response.sources()).isEmpty();
         assertThat(response.sourceStatus()).isEqualTo("UNAVAILABLE");
+    }
+
+    @Test
+    void usesDocumentationExcerptWhenChatCallFails() {
+        ToolCallback documentationSearch = documentationSearch(
+                "SOURCE: type=documentation; path=SETUP.md; url=; revision=working-tree\n"
+                        + "CONTENT:\nStart PostgreSQL, then run the backend from backend/.");
+        developerMcpToolCallbackProvider = () -> new ToolCallback[] { documentationSearch };
+        service = new DeveloperChatService(chatClient, evidenceTracker, developerMcpToolCallbackProvider);
+        when(responseSpec.content()).thenThrow(new IllegalStateException("chat unavailable"));
+
+        var response = service.ask(USER_ID, request("How do I run the backend?", null));
+
+        assertThat(response.answer()).contains("Start PostgreSQL", "backend/");
+        assertThat(response.answer()).doesNotContain("couldn't reach");
+        assertThat(response.sourceStatus()).isEqualTo("AVAILABLE");
+        assertThat(response.sources()).singleElement()
+                .satisfies(source -> assertThat(source.path()).isEqualTo("SETUP.md"));
+    }
+
+    @Test
+    void fallsBackToDocumentationWhenGitHubIsUnavailable() {
+        ToolCallback documentationSearch = documentationSearch(
+                "SOURCE: type=documentation; path=onboarding/README.md; url=; revision=working-tree\n"
+                        + "CONTENT:\nThe contributor guide explains the local development workflow.");
+        developerMcpToolCallbackProvider = () -> new ToolCallback[] { documentationSearch };
+        service = new DeveloperChatService(chatClient, evidenceTracker, developerMcpToolCallbackProvider);
+        when(responseSpec.content()).thenAnswer(invocation -> {
+            evidenceTracker.record("SOURCE_STATUS: unavailable; source=github; reason=network-error");
+            return "The repository is currently unavailable.";
+        });
+
+        var response = service.ask(USER_ID, request("How does local development work?", null));
+
+        assertThat(response.answer()).contains("contributor guide", "local development workflow");
+        assertThat(response.sourceStatus()).isEqualTo("PARTIAL");
+        assertThat(response.sources()).singleElement()
+                .satisfies(source -> assertThat(source.path()).isEqualTo("onboarding/README.md"));
+    }
+
+    private ToolCallback documentationSearch(String toolText) {
+        ToolCallback callback = mock(ToolCallback.class);
+        ToolDefinition definition = mock(ToolDefinition.class);
+        when(definition.name()).thenReturn("developer_search_documentation");
+        when(callback.getToolDefinition()).thenReturn(definition);
+        JsonHelper json = new JsonHelper();
+        String encodedText = json.toJson(toolText);
+        when(callback.call(anyString())).thenReturn(json.toJson(List.of(
+                Map.of("type", "text", "text", encodedText))));
+        return callback;
     }
 
     private DeveloperChatRequest request(String message, String sessionId) {

@@ -22,20 +22,22 @@ public class DeveloperChatEvidenceTracker {
         if (evidence == null || toolOutput == null) {
             return;
         }
-        for (String line : toolOutput.split("\\R")) {
-            if (line.startsWith("SOURCE_STATUS:")) {
-                String status = line.substring("SOURCE_STATUS:".length()).trim().split(";", 2)[0];
-                String source = value(line, "source");
-                if (!source.isBlank()) {
-                    evidence.statuses.put(source, status);
-                }
-            } else if (line.startsWith("SOURCE:")) {
-                String type = value(line, "type");
-                String path = value(line, "path");
-                if (!type.isBlank() && !path.isBlank()) {
-                    DeveloperChatSource source = new DeveloperChatSource(
-                            type, path, value(line, "url"), value(line, "revision"));
-                    evidence.sources.putIfAbsent(type + "\n" + path + "\n" + source.revision(), source);
+        for (String text : McpToolResultText.extractTexts(toolOutput)) {
+            for (String line : text.split("\\R")) {
+                if (line.startsWith("SOURCE_STATUS:")) {
+                    String status = line.substring("SOURCE_STATUS:".length()).trim().split(";", 2)[0];
+                    String source = value(line, "source");
+                    if (!source.isBlank()) {
+                        evidence.statuses.put(source, status);
+                    }
+                } else if (line.startsWith("SOURCE:")) {
+                    String type = value(line, "type");
+                    String path = value(line, "path");
+                    if (!type.isBlank() && !path.isBlank()) {
+                        DeveloperChatSource source = new DeveloperChatSource(
+                                type, path, value(line, "url"), value(line, "revision"));
+                        evidence.sources.putIfAbsent(type + "\n" + path + "\n" + source.revision(), source);
+                    }
                 }
             }
         }
@@ -74,6 +76,13 @@ public class DeveloperChatEvidenceTracker {
 
         public Map<String, String> statuses() {
             return Map.copyOf(statuses);
+        }
+
+        public TurnEvidence with(TurnEvidence other) {
+            TurnEvidence merged = copy();
+            merged.sources.putAll(other.sources);
+            merged.statuses.putAll(other.statuses);
+            return merged;
         }
 
         private TurnEvidence copy() {

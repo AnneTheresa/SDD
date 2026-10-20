@@ -1,0 +1,148 @@
+metadata:
+  generated: "2026-10-20"
+  source_plan: "specs/006-developer-chatbot-mcp/plan.md"
+  target_tasks: "specs/006-developer-chatbot-mcp/plan.md#task-breakdown"
+
+summary:
+  total_plan_items: 10
+  covered_plan_items: 10
+  missing_plan_items: 0
+  coverage_percentage: 100.0
+  total_tasks_generated: 14
+  orphan_tasks: 0
+
+phases:
+  - phase_id: "Phase-1"
+    phase_name: "Correct documentation source configuration"
+    items:
+      - item_id: "1.1"
+        description: "Point the MCP server at contributor documentation"
+        tasks:
+          - task_id: "T001"
+            description: "Change MCP documentation root default and preserve override."
+          - task_id: "T003"
+            description: "Correct setup and documentation guidance."
+        notes: ""
+      - item_id: "1.2"
+        description: "Prove recursive documentation discovery and citations"
+        tasks:
+          - task_id: "T002"
+            description: "Test nested Markdown search, citations, containment, and unavailable root."
+        notes: ""
+  - phase_id: "Phase-2"
+    phase_name: "Ground answers in the correct evidence"
+    items:
+      - item_id: "2.1"
+        description: "Define documentation-first and code-first tool use"
+        tasks:
+          - task_id: "T004"
+            description: "Update developer-specific source selection instructions."
+          - task_id: "T005"
+            description: "Verify source tool isolation and evidence tracking."
+        notes: ""
+      - item_id: "2.2"
+        description: "Validate GitHub repository scope and credential configuration"
+        tasks:
+          - task_id: "T006"
+            description: "Document and verify read-only runtime GitHub configuration."
+          - task_id: "T007"
+            description: "Update repository fixtures and test GitHub failure outcomes."
+        notes: ""
+      - item_id: "2.3"
+        description: "Preserve evidence tracking through the chat response"
+        tasks:
+          - task_id: "T008"
+            description: "Test citations, statuses, partial outages, no evidence, and prior-turn behavior."
+        notes: ""
+  - phase_id: "Phase-3"
+    phase_name: "Preserve the authorized developer experience"
+    items:
+      - item_id: "3.1"
+        description: "Verify authenticated developer chat and source presentation"
+        tasks:
+          - task_id: "T009"
+            description: "Verify HTTP contract and frontend citation/status behavior."
+        notes: ""
+      - item_id: "3.2"
+        description: "Validate role boundaries and account provisioning"
+        tasks:
+          - task_id: "T010"
+            description: "Test provisioning role rules and review route/security boundaries."
+        notes: ""
+  - phase_id: "Phase-4"
+    phase_name: "Verify source degradation and end-to-end quality"
+    items:
+      - item_id: "4.1"
+        description: "Exercise independent source availability"
+        tasks:
+          - task_id: "T011"
+            description: "Add source-outage and customer-chat independence regression tests."
+        notes: ""
+      - item_id: "4.2"
+        description: "Run a representative answer-quality evaluation"
+        tasks:
+          - task_id: "T012"
+            description: "Add a 30-question evaluation data set and assertions."
+          - task_id: "T014"
+            description: "Run evaluation and contributor/theme-parity validation."
+        notes: ""
+      - item_id: "4.3"
+        description: "Complete operational documentation and smoke validation"
+        tasks:
+          - task_id: "T003"
+            description: "Correct setup and documentation guidance."
+          - task_id: "T013"
+            description: "Run focused MCP, backend, and frontend tests."
+          - task_id: "T014"
+            description: "Run quickstart smoke scenarios."
+        notes: ""
+
+missing_plan_items: []
+orphan_tasks: []
+
+upstream_trace:
+  - plan_item: "1.1"
+    source_requirements: ["REQ-002", "REQ-004", "REQ-006", "REQ-016"]
+    tasks: ["T001", "T003"]
+    full_trace: "REQ-002,REQ-004,REQ-006,REQ-016 -> Phase-1.1 -> T001,T003"
+  - plan_item: "1.2"
+    source_requirements: ["REQ-002", "REQ-004", "REQ-006", "REQ-008", "REQ-009"]
+    tasks: ["T002"]
+    full_trace: "REQ-002,REQ-004,REQ-006,REQ-008,REQ-009 -> Phase-1.2 -> T002"
+  - plan_item: "2.1"
+    source_requirements: ["REQ-002", "REQ-003", "REQ-005", "REQ-006", "REQ-007", "REQ-008"]
+    tasks: ["T004", "T005"]
+    full_trace: "REQ-002,REQ-003,REQ-005,REQ-006,REQ-007,REQ-008 -> Phase-2.1 -> T004,T005"
+  - plan_item: "2.2"
+    source_requirements: ["REQ-003", "REQ-004", "REQ-006", "REQ-007", "REQ-009", "REQ-011", "REQ-015", "REQ-016"]
+    tasks: ["T006", "T007"]
+    full_trace: "REQ-003,REQ-004,REQ-006,REQ-007,REQ-009,REQ-011,REQ-015,REQ-016 -> Phase-2.2 -> T006,T007"
+  - plan_item: "2.3"
+    source_requirements: ["REQ-004", "REQ-005", "REQ-006", "REQ-011", "REQ-013"]
+    tasks: ["T008"]
+    full_trace: "REQ-004,REQ-005,REQ-006,REQ-011,REQ-013 -> Phase-2.3 -> T008"
+  - plan_item: "3.1"
+    source_requirements: ["REQ-001", "REQ-004", "REQ-006", "REQ-010", "REQ-011", "REQ-012", "REQ-013"]
+    tasks: ["T009"]
+    full_trace: "REQ-001,REQ-004,REQ-006,REQ-010,REQ-011,REQ-012,REQ-013 -> Phase-3.1 -> T009"
+  - plan_item: "3.2"
+    source_requirements: ["REQ-001", "REQ-007", "REQ-009", "REQ-014", "REQ-017", "REQ-018"]
+    tasks: ["T010"]
+    full_trace: "REQ-001,REQ-007,REQ-009,REQ-014,REQ-017,REQ-018 -> Phase-3.2 -> T010"
+  - plan_item: "4.1"
+    source_requirements: ["REQ-006", "REQ-010", "REQ-013"]
+    tasks: ["T011"]
+    full_trace: "REQ-006,REQ-010,REQ-013 -> Phase-4.1 -> T011"
+  - plan_item: "4.2"
+    source_requirements: ["REQ-002", "REQ-003", "REQ-004", "REQ-005", "REQ-006", "REQ-011", "REQ-014"]
+    tasks: ["T012", "T014"]
+    full_trace: "REQ-002,REQ-003,REQ-004,REQ-005,REQ-006,REQ-011,REQ-014 -> Phase-4.2 -> T012,T014"
+  - plan_item: "4.3"
+    source_requirements: ["REQ-002", "REQ-006", "REQ-010", "REQ-015", "REQ-016", "REQ-017"]
+    tasks: ["T003", "T013", "T014"]
+    full_trace: "REQ-002,REQ-006,REQ-010,REQ-015,REQ-016,REQ-017 -> Phase-4.3 -> T003,T013,T014"
+
+validation:
+  passed: true
+  errors: []
+  warnings: []

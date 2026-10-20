@@ -1,0 +1,309 @@
+metadata:
+  generated: "2026-10-20"
+  source_tasks: "specs/006-developer-chatbot-mcp/plan.md#task-breakdown"
+  last_updated: "2026-10-20"
+
+summary:
+  total_tasks: 14
+  completed_tasks: 8
+  in_progress_tasks: 0
+  pending_tasks: 6
+  completion_percentage: 57.1
+
+tasks:
+  - task_id: "T001"
+    description: "Set the Documentation folder as the MCP server default root."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "mcpdevserver/src/main/resources/application.properties"
+          change_type: "modified"
+          description: "Changed the default documentation root to ../Documentation."
+        - file: "mcpdevserver/src/main/java/com/voltio/mcpdevserver/config/McpDevServerProperties.java"
+          change_type: "modified"
+          description: "Aligned the properties class default with the application setting."
+      pr_link: ""
+    verification:
+      build_passed: true
+      test_results:
+        command: "Set-Location .\\mcpdevserver; .\\mvnw.cmd test"
+        passed: 14
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Application context verifies the configured default and discovers the actual nested architecture guide."
+    upstream_trace:
+      plan_item: "1.1"
+      requirements: ["REQ-002", "REQ-004", "REQ-006", "REQ-016"]
+      full_trace: "REQ-002,REQ-004,REQ-006,REQ-016 -> Phase-1.1 -> T001"
+  - task_id: "T002"
+    description: "Test nested Documentation search, relative citations, containment, and unavailable-root behavior."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "mcpdevserver/src/test/java/com/voltio/mcpdevserver/tools/DocumentationToolsTest.java"
+          change_type: "modified"
+          description: "Added nested markdown search and citation coverage."
+      pr_link: ""
+    verification:
+      build_passed: true
+      test_results:
+        command: "Set-Location .\\mcpdevserver; .\\mvnw.cmd test"
+        passed: 6
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Existing containment, redaction, and unavailable-root tests also passed."
+    upstream_trace:
+      plan_item: "1.2"
+      requirements: ["REQ-002", "REQ-004", "REQ-006", "REQ-008", "REQ-009"]
+      full_trace: "REQ-002,REQ-004,REQ-006,REQ-008,REQ-009 -> Phase-1.2 -> T002"
+  - task_id: "T003"
+    description: "Correct source configuration and startup instructions."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "SETUP.md"
+          change_type: "modified"
+          description: "Documented accurate Windows and macOS/Linux startup, PostgreSQL, MCP, and test commands."
+        - file: ".env.example"
+          change_type: "modified"
+          description: "Updated repository/documentation defaults and disabled persona seeding by default."
+        - file: "Documentation/README.md"
+          change_type: "modified"
+          description: "Explained the Documentation corpus and its distinction from feature specs."
+      pr_link: ""
+    verification:
+      build_passed: true
+      test_results:
+        command: "git -c core.whitespace=cr-at-eol diff --check"
+        passed: 0
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Documentation-only and configuration sample changes; whitespace check passed."
+    upstream_trace:
+      plan_item: "1.1"
+      requirements: ["REQ-002", "REQ-004", "REQ-006", "REQ-016"]
+      full_trace: "REQ-002,REQ-004,REQ-006,REQ-016 -> Phase-1.1 -> T003"
+  - task_id: "T004"
+    description: "Guide source selection and evidence distinction in developer chat."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "backend/src/main/java/com/group1/banking/config/ChatbotAiConfig.java"
+          change_type: "modified"
+          description: "Prioritized contributor docs for guidance and GitHub for current code, preserving safety/evidence constraints."
+      pr_link: ""
+    verification:
+      build_passed: true
+      test_results:
+        command: "Set-Location .\\backend; .\\mvnw.cmd -Dtest=ChatbotAiConfigTest test"
+        passed: 4
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Existing developer/customer tool isolation test passed."
+    upstream_trace:
+      plan_item: "2.1"
+      requirements: ["REQ-002", "REQ-003", "REQ-005", "REQ-006", "REQ-007", "REQ-008"]
+      full_trace: "REQ-002,REQ-003,REQ-005,REQ-006,REQ-007,REQ-008 -> Phase-2.1 -> T004"
+  - task_id: "T005"
+    description: "Verify developer/customer tool separation and connection-level MCP isolation."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "backend/src/main/java/com/group1/banking/config/ChatbotAiConfig.java"
+          change_type: "modified"
+          description: "Injects MCP clients as a collection and scopes the developer provider to developer-server."
+        - file: "backend/src/main/java/com/group1/banking/config/McpClientDiagnostics.java"
+          change_type: "modified"
+          description: "Checks the qualified developer provider and logs empty or failed discovery clearly."
+        - file: "backend/src/test/java/com/group1/banking/config/ChatbotAiConfigTest.java"
+          change_type: "modified"
+          description: "Verified customer tools and developer evidence-tracked tools remain separated."
+        - file: "backend/src/test/java/com/group1/banking/config/McpClientIsolationTest.java"
+          change_type: "added"
+          description: "Verified Spring injects all configured MCP clients and rates-server failures do not affect developer tool discovery."
+      pr_link: ""
+    verification:
+      build_passed: true
+      test_results:
+        command: "Set-Location .\\backend; .\\mvnw.cmd '-Dtest=McpClientDiagnosticsTest,DeveloperChatServiceTest,DeveloperChatEvidenceTrackerTest,ChatbotAiConfigTest,McpClientIsolationTest' test"
+        passed: 16
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Includes a Spring context check of collection injection and confirms four developer MCP callbacks at backend startup."
+    upstream_trace:
+      plan_item: "2.1"
+      requirements: ["REQ-002", "REQ-005", "REQ-007", "REQ-010"]
+      full_trace: "REQ-002,REQ-005,REQ-007,REQ-010 -> Phase-2.1 -> T005"
+  - task_id: "T007"
+    description: "Align GitHub owner fixtures with the current repository and retain failure coverage."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "mcpdevserver/src/test/java/com/voltio/mcpdevserver/tools/GitHubRepositoryToolsTest.java"
+          change_type: "modified"
+          description: "Updated repository owner expectations to bit-yottabyte/banking-platform."
+        - file: "src/pages/DeveloperChatPage.test.jsx"
+          change_type: "modified"
+          description: "Updated the example clickable source URL to the current repository."
+      pr_link: ""
+    verification:
+      build_passed: true
+      test_results:
+        command: "Set-Location .\\mcpdevserver; .\\mvnw.cmd test; npm test -- src/pages/DeveloperChatPage.test.jsx"
+        passed: 7
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "MCP tests include explicit missing-token behavior; no live GitHub request was made."
+    upstream_trace:
+      plan_item: "2.2"
+      requirements: ["REQ-003", "REQ-004", "REQ-006", "REQ-007", "REQ-009", "REQ-011", "REQ-015", "REQ-016"]
+      full_trace: "REQ-003,REQ-004,REQ-006,REQ-007,REQ-009,REQ-011,REQ-015,REQ-016 -> Phase-2.2 -> T007"
+  - task_id: "T008"
+    description: "Test serialized MCP evidence, documentation fallback, partial outages, and current-turn citation boundaries."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "backend/src/main/java/com/group1/banking/service/impl/McpToolResultText.java"
+          change_type: "added"
+          description: "Decoded nested Spring AI MCP tool text before evidence tracking and fallback rendering."
+        - file: "backend/src/main/java/com/group1/banking/service/impl/DeveloperChatEvidenceTracker.java"
+          change_type: "modified"
+          description: "Recorded citations and source statuses from serialized MCP callback output."
+        - file: "backend/src/main/java/com/group1/banking/service/impl/DeveloperChatService.java"
+          change_type: "modified"
+          description: "Searched documentation and returned a cited excerpt when the model call fails or repository evidence is unavailable."
+        - file: "backend/src/test/java/com/group1/banking/service/impl/DeveloperChatServiceTest.java"
+          change_type: "modified"
+          description: "Covered model failure fallback, GitHub outage fallback, no evidence, and prior-turn citation isolation."
+        - file: "backend/src/test/java/com/group1/banking/service/impl/DeveloperChatEvidenceTrackerTest.java"
+          change_type: "added"
+          description: "Verified JSON-wrapped documentation citations and GitHub failure statuses are decoded."
+      pr_link: ""
+    verification:
+      build_passed: true
+      test_results:
+        command: "Set-Location .\\backend; .\\mvnw.cmd '-Dtest=DeveloperChatServiceTest,DeveloperChatEvidenceTrackerTest,ChatbotAiConfigTest,McpClientIsolationTest' test"
+        passed: 13
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Documentation excerpts are returned only when the decoded result contains a documentation citation."
+    upstream_trace:
+      plan_item: "2.3"
+      requirements: ["REQ-004", "REQ-005", "REQ-006", "REQ-008", "REQ-011", "REQ-013"]
+      full_trace: "REQ-004,REQ-005,REQ-006,REQ-008,REQ-011,REQ-013 -> Phase-2.3 -> T008"
+  - task_id: "T011"
+    description: "Verify source outage fallback and customer-chat independence."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "backend/src/test/java/com/group1/banking/service/impl/DeveloperChatServiceTest.java"
+          change_type: "modified"
+          description: "Tested documentation answers during a GitHub outage."
+        - file: "backend/src/test/java/com/group1/banking/config/McpClientIsolationTest.java"
+          change_type: "modified"
+          description: "Verified rates discovery remains scoped to the rates client while developer discovery excludes it."
+      pr_link: ""
+    verification:
+      build_passed: true
+      test_results:
+        command: "Set-Location .\\backend; .\\mvnw.cmd '-Dtest=DeveloperChatServiceTest,ChatbotAiConfigTest,McpClientIsolationTest' test"
+        passed: 12
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "A failing GitHub connection is not queried when discovering developer tools."
+    upstream_trace:
+      plan_item: "4.1"
+      requirements: ["REQ-006", "REQ-010", "REQ-013"]
+      full_trace: "REQ-006,REQ-010,REQ-013 -> Phase-4.1 -> T011"
+
+pending_tasks:
+  - task_id: "T006"
+    description: "Verify runtime GitHub credentials and repository scope."
+    blocked_by: []
+    priority: "P1"
+  - task_id: "T009"
+    description: "Verify the HTTP contract and frontend source-status presentation."
+    blocked_by: []
+    priority: "P1"
+  - task_id: "T010"
+    description: "Expand account-provisioning role tests."
+    blocked_by: []
+    priority: "P1"
+  - task_id: "T012"
+    description: "Create and evaluate a repeatable 30-question quality set."
+    blocked_by: []
+    priority: "P1"
+  - task_id: "T013"
+    description: "Run the complete MCP, backend, and frontend test suites."
+    blocked_by: []
+    priority: "P1"
+  - task_id: "T014"
+    description: "Run quickstart, quality, and theme-parity scenarios."
+    blocked_by: []
+    priority: "P2"
+
+untracked_changes: []
+
+traceability_chain:
+  - chain_id: "TRACE-001"
+    requirement: "REQ-002"
+    plan_phase: "Phase-1"
+    plan_item: "1.1"
+    tasks: ["T001", "T003"]
+    files:
+      - "mcpdevserver/src/main/resources/application.properties"
+      - "mcpdevserver/src/main/java/com/voltio/mcpdevserver/config/McpDevServerProperties.java"
+      - "SETUP.md"
+      - ".env.example"
+      - "Documentation/README.md"
+    status: "partial"
+  - chain_id: "TRACE-002"
+    requirement: "REQ-004"
+    plan_phase: "Phase-1"
+    plan_item: "1.2"
+    tasks: ["T002"]
+    files:
+      - "mcpdevserver/src/test/java/com/voltio/mcpdevserver/tools/DocumentationToolsTest.java"
+    status: "complete"
+  - chain_id: "TRACE-003"
+    requirement: "REQ-005"
+    plan_phase: "Phase-2"
+    plan_item: "2.1"
+    tasks: ["T004"]
+    files:
+      - "backend/src/main/java/com/group1/banking/config/ChatbotAiConfig.java"
+    status: "partial"
+  - chain_id: "TRACE-004"
+    requirement: "REQ-006"
+    plan_phase: "Phase-2"
+    plan_item: "2.3"
+    tasks: ["T008"]
+    files:
+      - "backend/src/main/java/com/group1/banking/service/impl/DeveloperChatService.java"
+      - "backend/src/main/java/com/group1/banking/service/impl/DeveloperChatEvidenceTracker.java"
+      - "backend/src/main/java/com/group1/banking/service/impl/McpToolResultText.java"
+    status: "complete"
+  - chain_id: "TRACE-005"
+    requirement: "REQ-010"
+    plan_phase: "Phase-4"
+    plan_item: "4.1"
+    tasks: ["T011"]
+    files:
+      - "backend/src/test/java/com/group1/banking/service/impl/DeveloperChatServiceTest.java"
+      - "backend/src/test/java/com/group1/banking/config/McpClientIsolationTest.java"
+    status: "complete"
+
+validation:
+  passed: true
+  errors: []
+  warnings:
+    - "The current token in the local .env was not inspected or sent to GitHub; runtime GitHub authorization remains unverified."
+  blocking_issues: []

@@ -38,6 +38,19 @@ class DocumentationToolsTest {
     }
 
     @Test
+    void searchFindsMarkdownInNestedDocumentationDirectories() throws IOException {
+        Path onboarding = Files.createDirectories(documentationRoot.resolve("onboarding/project-overview"));
+        Files.writeString(onboarding.resolve("architecture-overview.md"),
+                "# Request flow\nThe browser request travels through the backend API.");
+
+        String result = tools.searchDocumentation("browser request backend");
+
+        assertThat(result)
+                .contains("SOURCE: type=documentation; path=onboarding/project-overview/architecture-overview.md")
+                .contains("The browser request travels through the backend API.");
+    }
+
+    @Test
     void readRejectsPathsOutsideDocumentationRoot() throws IOException {
         Path secret = documentationRoot.getParent().resolve("private.md");
         Files.writeString(secret, "private content");

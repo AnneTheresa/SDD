@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "mcp.dev")
 public class McpDevServerProperties {
 
-    private String documentationRoot = "../specs";
+    private String documentationRoot = "../Documentation";
     private final GitHub github = new GitHub();
 
     public String getDocumentationRoot() {
